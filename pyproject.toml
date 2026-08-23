@@ -8,6 +8,6 @@ dependencies = [
     "frozendict>=2.4.7",
     "gitignore-parser>=0.1.13",
     "pydantic>=2.13.4",
-    "tree-sitter>=0.26.0",
-    "tree-sitter-python>=0.25.0",
+    "tree-sitter==0.26.0",
+    "tree-sitter-python==0.25.0",
 ]

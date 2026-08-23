@@ -99,8 +99,8 @@ requires-dist = [
     { name = "frozendict", specifier = ">=2.4.7" },
     { name = "gitignore-parser", specifier = ">=0.1.13" },
     { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "tree-sitter", specifier = ">=0.26.0" },
-    { name = "tree-sitter-python", specifier = ">=0.25.0" },
+    { name = "tree-sitter", specifier = "==0.26.0" },
+    { name = "tree-sitter-python", specifier = "==0.25.0" },
 ]
 
 [[package]]
