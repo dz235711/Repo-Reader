@@ -7,4 +7,4 @@ class Fields(StrEnum):
 
 class NameTypes(StrEnum):
     DOTTED_NAME = "dotted_name"
-    NAME = Fields.NAME
+    NAME = "name"

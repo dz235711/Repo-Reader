@@ -26,11 +26,40 @@ def child_of(node: ts.Node, name: str) -> ts.Node:
     return child
 
 
-def first_type_of(node: ts.Node, type: str) -> ts.Node:
+def types_of(
+    node: ts.Node, types: set[str], per_type_cap: int = 0
+) -> dict[str, list[ts.Node]]:
+    matched = dict()
+    filled = 0
     for child in node.children:
-        if child.type == type:
-            return child
-    assert False
+        if child.type in types:
+            matched_nodes = matched.setdefault(child.type, [])
+            if per_type_cap <= 0 or len(matched_nodes) < per_type_cap:
+                matched_nodes.append(child)
+                if per_type_cap > 0 and len(matched_nodes) == per_type_cap:
+                    filled += 1
+                    if filled == len(types):
+                        break
+    return matched
+
+
+def only_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
+    matched = types_of(node, types)
+    assert all(len(nodes) == 1 for nodes in matched.values())
+    return {type: nodes[0] for type, nodes in matched.items()}
+
+
+def only_type_of(node: ts.Node, type: str) -> ts.Node:
+    return only_types_of(node, {type})[type]
+
+
+def first_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
+    matched = types_of(node, types, per_type_cap=1)
+    return {type: nodes[0] for type, nodes in matched.items()}
+
+
+def first_type_of(node: ts.Node, type: str) -> ts.Node:
+    return first_types_of(node, {type})[type]
 
 
 def decode(bytes: bytes) -> str:

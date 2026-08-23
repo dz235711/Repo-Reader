@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Iterable
+from collections.abc import Iterable
 
 from frozendict import frozendict
 

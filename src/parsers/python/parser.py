@@ -4,11 +4,10 @@ import tree_sitter as ts
 from configs.languages import Language
 
 from .model.core import PythonParsedFile, PythonParserContext
-from .ts_nodes.imports import ImportNodeType
-
-from .extractors.imports import (
-    parse_import_statement,
-)
+from .ts_nodes.imports import ImportNodeTypes
+from .ts_nodes.functions import FunctionNodeType
+from .subparsers.imports import parse_import
+from .subparsers.functions import parse_function
 
 
 class Parser:
@@ -21,15 +20,17 @@ class Parser:
         tree = self._parser.parse(code)
 
         imports = []
+        functions = []
 
         fringe = [tree.root_node]
         while fringe:
             node = fringe.pop()
-            match node.type:
-                case ImportNodeType():
-                    imports.append(parse_import_statement(node))
-                case _:
-                    fringe.extend(node.children)
+            if node.type in ImportNodeTypes:
+                imports.append(parse_import(node))
+            elif node.type in FunctionNodeType:
+                functions.append(parse_function(node))
+            else:
+                fringe.extend(node.children)
 
         return PythonParsedFile(
             rel_path=context.rel_path,
