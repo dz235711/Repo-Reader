@@ -1,1 +1,0 @@
-PACKAGE_INITIALISER_FILENAME = "__init__.py"

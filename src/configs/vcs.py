@@ -2,7 +2,6 @@ from pathlib import Path
 from enum import StrEnum
 from typing import Callable
 from dataclasses import dataclass
-from functools import cache
 
 from gitignore_parser import parse_gitignore
 from frozendict import frozendict
@@ -17,7 +16,7 @@ class Vcs(StrEnum):
     CVS = "cvs"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class VcsProfile:
     vcs: Vcs
     ignore_parser: Callable[[Path], Callable[[Path], bool]]

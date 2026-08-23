@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from functools import cache
-from typing import Callable, Optional, Iterable
+from typing import Iterable
 
 from frozendict import frozendict
 
@@ -19,7 +18,7 @@ class Language(StrEnum):
     KOTLIN = "kotlin"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class LanguageProfile:
     language: Language
     extensions: frozenset[str]

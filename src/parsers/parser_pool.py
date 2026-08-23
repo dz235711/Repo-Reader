@@ -2,9 +2,10 @@ from functools import cache
 
 from frozendict import frozendict
 
-from config.language import Language
-from parser.protocol import Parser
-from parser.python.parser import Parser as PythonParser
+from configs.languages import Language
+
+from .protocols import Parser
+from .python.parser import Parser as PythonParser
 
 _PARSER_MAP = frozendict(
     {

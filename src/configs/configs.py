@@ -2,12 +2,12 @@ from tomllib import load as load_toml
 from pathlib import Path
 from functools import cache
 
-from pydantic import BaseModel, field_validator
-from core.pydantic_adaptor import FrozenDict
-from frozendict import frozendict
+from pydantic import BaseModel
 
-from config.language import Language
-from config.vcs import Vcs
+from adaptors.pydantic import FrozenDict
+
+from .languages import Language
+from .vcs import Vcs
 
 
 class Git(BaseModel):

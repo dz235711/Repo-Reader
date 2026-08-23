@@ -1,6 +1,6 @@
 import tree_sitter as ts
 
-from core.model import SourceSpan, Coordinate
+from core.models import SourceSpan, Coordinate
 
 _TS_ENCODING = "utf-8"
 

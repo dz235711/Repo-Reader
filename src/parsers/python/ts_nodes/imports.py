@@ -1,24 +1,16 @@
 from enum import StrEnum
 
-
-class CoreFields(StrEnum):
-    NAME = "name"
+from .core import Fields, NameTypes
 
 
-class NameTypes(StrEnum):
-    DOTTED_NAME = "dotted_name"
-    NAME = "name"
-
-
-class NodeType(StrEnum):
+class ImportNodeType(StrEnum):
     IMPORT_STATEMENT = "import_statement"
     FUTURE_IMPORT_STATEMENT = "future_import_statement"
     IMPORT_FROM_STATEMENT = "import_from_statement"
-    FUNCTION_DEFINITION = "function_definition"
 
 
 class ImportStatementFields(StrEnum):
-    NAME = CoreFields.NAME
+    NAME = Fields.NAME
 
 
 class ImportNameTypes(StrEnum):
@@ -27,13 +19,13 @@ class ImportNameTypes(StrEnum):
 
 
 class AliasedImportFields(StrEnum):
-    NAME = CoreFields.NAME
+    NAME = Fields.NAME
     ALIAS = "alias"
 
 
 class ImportFromFields(StrEnum):
     MODULE_NAME = "module_name"
-    NAME = CoreFields.NAME
+    NAME = Fields.NAME
 
 
 class ImportFromTypes(StrEnum):
