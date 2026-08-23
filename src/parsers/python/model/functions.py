@@ -24,7 +24,7 @@ class BoundedTypeParameter(GenericTypeParameter):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ConstrainedTypeParameters(GenericTypeParameter):
-    constraints: list[Expression]
+    constraints: tuple[Expression, ...]
 
 
 type TypeParameter = GenericTypeParameter | BoundedTypeParameter | ConstrainedTypeParameters
@@ -72,7 +72,7 @@ class Decorator:
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Function:
     name: Expression
-    qualified_name: str
+    qualified_name: str | None
     span: SourceSpan
     is_async: bool
     type_parameters: tuple[TypeParameter, ...]

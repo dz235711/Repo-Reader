@@ -1,6 +1,6 @@
 import tree_sitter as ts
 
-from core.models import SourceSpan, Coordinate
+from core.models import SourceSpan, Coordinate, Expression
 
 _TS_ENCODING = "utf-8"
 
@@ -20,10 +20,23 @@ def span_from_node(node: ts.Node) -> SourceSpan:
     )
 
 
+def expression_from_node(node: ts.Node) -> Expression:
+    assert node.text is not None
+    return Expression(
+        name=decode(node.text),
+        span=span_from_node(node),
+    )
+
+
 def child_of(node: ts.Node, name: str) -> ts.Node:
     child = node.child_by_field_name(name)
     assert child is not None
     return child
+
+
+def only_child_of(node: ts.Node) -> ts.Node:
+    assert len(node.children) == 1
+    return node.children[0]
 
 
 def types_of(
@@ -43,6 +56,10 @@ def types_of(
     return matched
 
 
+def type_of(node: ts.Node, type: str) -> list[ts.Node]:
+    return types_of(node, {type}).get(type, [])
+
+
 def only_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
     matched = types_of(node, types)
     assert all(len(nodes) == 1 for nodes in matched.values())
@@ -60,6 +77,12 @@ def first_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
 
 def first_type_of(node: ts.Node, type: str) -> ts.Node:
     return first_types_of(node, {type})[type]
+
+
+def named_child_of(node: ts.Node, name: str) -> ts.Node:
+    child = node.child_by_field_name(name)
+    assert child is not None
+    return child
 
 
 def decode(bytes: bytes) -> str:
