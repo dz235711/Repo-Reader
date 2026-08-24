@@ -22,9 +22,8 @@ from ..ts_nodes.functions import (
 )
 from ..model.functions import (
     Function,
-    TypeParameter,
     TypeParameters,
-    GenericTypeParameter,
+    PlainTypeParameter,
     ConstrainedTypeParameter,
     BoundTypeParameter,
 )
@@ -46,6 +45,7 @@ def parse_function(node: ts.Node) -> Function:
             #     qualified_name=None,
             #     span=span_from_node(node),
             #     is_async=FunctionDefinitionNodeTypes.ASYNC in matched,
+            #     type_parameters=type_parameters,
             # )
 
 
@@ -59,7 +59,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
         match TypeParameterChildrenTypes(type_param_node.type):
             case TypeParameterChildrenTypes.IDENTIFIER:
                 regulars.append(
-                    GenericTypeParameter(
+                    PlainTypeParameter(
                         name=expression_from_node(type_param_node),
                     )
                 )
@@ -94,7 +94,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                     SplatTypeParameterChildrenIndices.PREFIX
                 ]
                 name = type_param_node.children[SplatTypeParameterChildrenIndices.NAME]
-                type_param_node = GenericTypeParameter(
+                type_param_node = PlainTypeParameter(
                     name=expression_from_node(name),
                 )
                 match SplatTypeParameterPrefixes(prefix.type):
@@ -103,7 +103,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                     case SplatTypeParameterPrefixes.SPEC:
                         specs.append(type_param_node)
     return TypeParameters(
-        regular=tuple(regulars),
-        tuple=tuple(tuples),
-        spec=tuple(specs),
+        regulars=tuple(regulars),
+        tuples=tuple(tuples),
+        specs=tuple(specs),
     )

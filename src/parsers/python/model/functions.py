@@ -12,29 +12,34 @@ class Parameter:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class GenericTypeParameter:
+class _TypeParameter:
     name: Expression
     default: Expression | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class BoundTypeParameter(GenericTypeParameter):
+class PlainTypeParameter(_TypeParameter):
+    pass
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BoundTypeParameter(_TypeParameter):
     bind: Expression
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ConstrainedTypeParameter(GenericTypeParameter):
+class ConstrainedTypeParameter(_TypeParameter):
     constraints: tuple[Expression, ...]
 
 
-type TypeParameter = GenericTypeParameter | BoundTypeParameter | ConstrainedTypeParameter
+type TypeParameter = PlainTypeParameter | BoundTypeParameter | ConstrainedTypeParameter
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TypeParameters:
-    regular: tuple[TypeParameter, ...]
-    tuple: tuple[GenericTypeParameter, ...]
-    spec: tuple[GenericTypeParameter, ...]
+    regulars: tuple[TypeParameter, ...]
+    tuples: tuple[PlainTypeParameter, ...]
+    specs: tuple[PlainTypeParameter, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -76,7 +81,7 @@ class Function:
     qualified_name: str | None
     span: SourceSpan
     is_async: bool
-    type_parameters: tuple[TypeParameter, ...]
+    type_parameters: TypeParameters
     parameters: Parameters
     decorators: tuple[Decorator, ...]
     body_span: SourceSpan  # TODO: parse further once initial works
