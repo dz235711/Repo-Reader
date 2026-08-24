@@ -15,18 +15,20 @@ from ..ts_nodes.functions import (
     FunctionDefinitionFields,
     FunctionDefinitionNodeTypes,
     TypeParameterChildrenTypes,
-    TYPE_PARAMETER_NODE_TYPE,
+    TYPE_PARAMETER_NODE_WRAPPER,
     ConstrainedTypeParameterChildrenIndices,
-    TUPLE,
+    SplatTypeParameterChildrenIndices,
+    SplatTypeParameterPrefixes,
 )
 from ..model.functions import (
     Function,
     TypeParameter,
     TypeParameters,
     GenericTypeParameter,
-    ConstrainedTypeParameters,
-    BoundedTypeParameter,
+    ConstrainedTypeParameter,
+    BoundTypeParameter,
 )
+from ..ts_nodes.core import CollectionTypes
 
 
 def parse_function(node: ts.Node) -> Function:
@@ -48,39 +50,60 @@ def parse_function(node: ts.Node) -> Function:
 
 
 def _parse_type_parameters(node: ts.Node) -> TypeParameters:
-    map_t(
-        _parse_type_parameter,
-        map(only_child_of, type_of(node, TYPE_PARAMETER_NODE_TYPE)),
+    regulars = []
+    tuples = []
+    specs = []
+    for child in type_of(node, TYPE_PARAMETER_NODE_WRAPPER):
+        type_param_node = only_child_of(child)
+        # NOTE: current python treesitter grammar is 3.12 so defaults can't be parsed yet
+        match TypeParameterChildrenTypes(type_param_node.type):
+            case TypeParameterChildrenTypes.IDENTIFIER:
+                regulars.append(
+                    GenericTypeParameter(
+                        name=expression_from_node(type_param_node),
+                    )
+                )
+            case TypeParameterChildrenTypes.CONSTRAINED_TYPE:
+                name_node = only_child_of(
+                    type_param_node.children[
+                        ConstrainedTypeParameterChildrenIndices.NAME
+                    ]
+                )
+                constraint_node = only_child_of(
+                    type_param_node.children[
+                        ConstrainedTypeParameterChildrenIndices.CONSTRAINTS
+                    ]
+                )
+                name = expression_from_node(name_node)
+                if constraint_node.type == CollectionTypes.TUPLE:
+                    constraints = type_of(
+                        constraint_node, TypeParameterChildrenTypes.IDENTIFIER
+                    )
+                    param = ConstrainedTypeParameter(
+                        name=name,
+                        constraints=map_t(expression_from_node, constraints),
+                    )
+                else:
+                    param = BoundTypeParameter(
+                        name=name,
+                        bind=expression_from_node(constraint_node),
+                    )
+                regulars.append(param)
+            case TypeParameterChildrenTypes.SPLAT_TYPE:
+                prefix = type_param_node.children[
+                    SplatTypeParameterChildrenIndices.PREFIX
+                ]
+                name = type_param_node.children[SplatTypeParameterChildrenIndices.NAME]
+                type_param_node = GenericTypeParameter(
+                    name=expression_from_node(name),
+                )
+                match SplatTypeParameterPrefixes(prefix.type):
+                    case SplatTypeParameterPrefixes.TUPLE:
+                        tuples.append(type_param_node)
+                    case SplatTypeParameterPrefixes.SPEC:
+                        specs.append(type_param_node)
+    return TypeParameters(
+        regular=tuple(regulars),
+        tuple=tuple(tuples),
+        spec=tuple(specs),
     )
-
-
-def _parse_type_parameter(node: ts.Node) -> TypeParameter:
-    # NOTE: current python treesitter grammar is 3.12 so defaults can't be parsed
-    match TypeParameterChildrenTypes(node.type):
-        case TypeParameterChildrenTypes.IDENTIFIER:
-            return GenericTypeParameter(
-                name=expression_from_node(node),
-            )
-        case TypeParameterChildrenTypes.CONSTRAINED_TYPE:
-            name_node = only_child_of(
-                node.children[ConstrainedTypeParameterChildrenIndices.NAME]
-            )
-            constraint_node = only_child_of(
-                node.children[ConstrainedTypeParameterChildrenIndices.CONSTRAINTS]
-            )
-            name = expression_from_node(name_node)
-            constraints = (
-                type_of(constraint_node, TypeParameterChildrenTypes.IDENTIFIER)
-                if constraint_node.type == TUPLE
-                else [constraint_node]
-            )
-            return ConstrainedTypeParameters(
-                name=name,
-                constraints=map_t(expression_from_node, constraints),
-            )
-        case TypeParameterChildrenTypes.SPLAT_TYPE:
-            # TODO: match on prefix after merging this with _parse_type_parameters
-            prefix = node.children[0]
-            return GenericTypeParameter(
-                name=expression_from_node(node.children[1]),
-            )

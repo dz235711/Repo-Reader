@@ -18,22 +18,23 @@ class GenericTypeParameter:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class BoundedTypeParameter(GenericTypeParameter):
+class BoundTypeParameter(GenericTypeParameter):
     bind: Expression
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ConstrainedTypeParameters(GenericTypeParameter):
+class ConstrainedTypeParameter(GenericTypeParameter):
     constraints: tuple[Expression, ...]
 
 
-type TypeParameter = GenericTypeParameter | BoundedTypeParameter | ConstrainedTypeParameters
+type TypeParameter = GenericTypeParameter | BoundTypeParameter | ConstrainedTypeParameter
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TypeParameters:
-    type_parameters: tuple[TypeParameter, ...]
-    positional_type_parameters: tuple[TypeParameter, ...]
-    signature_type_parameters: tuple[TypeParameter, ...]
+    regular: tuple[TypeParameter, ...]
+    tuple: tuple[GenericTypeParameter, ...]
+    spec: tuple[GenericTypeParameter, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

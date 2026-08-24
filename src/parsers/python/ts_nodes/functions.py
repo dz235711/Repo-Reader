@@ -2,8 +2,7 @@ from enum import StrEnum, IntEnum
 
 from .core import Fields
 
-TYPE_PARAMETER_NODE_TYPE = "type"
-TUPLE = "tuple"
+TYPE_PARAMETER_NODE_WRAPPER = "type"
 
 
 class FunctionNodeType(StrEnum):
@@ -31,8 +30,8 @@ class ConstrainedTypeParameterChildrenIndices(IntEnum):
 
 
 class SplatTypeParameterPrefixes(StrEnum):
-    STAR = "*"
-    DOUBLE_STAR = "**"
+    TUPLE = "*"
+    SPEC = "**"
 
 
 class SplatTypeParameterChildrenIndices(IntEnum):

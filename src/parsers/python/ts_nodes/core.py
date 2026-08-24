@@ -8,3 +8,7 @@ class Fields(StrEnum):
 class NameTypes(StrEnum):
     DOTTED_NAME = "dotted_name"
     NAME = "name"
+
+
+class CollectionTypes(StrEnum):
+    TUPLE = "tuple"
