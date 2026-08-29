@@ -10,28 +10,28 @@ from .languages import Language
 from .vcs import Vcs
 
 
-class Git(BaseModel):
+class _Git(BaseModel):
     respect_gitignore: bool
 
 
-class Repository(BaseModel):
+class _Repository(BaseModel):
     root: Path
     vcs: Vcs
-    git: Git
+    git: _Git
 
 
-class Ignore(BaseModel):
+class _Ignore(BaseModel):
     extra: frozenset[str]
 
 
-class Indexing(BaseModel):
+class _Indexing(BaseModel):
     languages: FrozenDict[Language, str]
 
 
 class Config(BaseModel):
-    repository: Repository
-    ignore: Ignore
-    indexing: Indexing
+    repository: _Repository
+    ignore: _Ignore
+    indexing: _Indexing
 
     @classmethod
     def load(cls, path: Path) -> Config:
