@@ -1,7 +1,6 @@
-from pathlib import Path
-from typing import Generator, Callable
-from collections.abc import Iterable
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
+from pathlib import Path
 
 from configs.vcs import get_vcs_profile, VcsProfile, Vcs
 from configs.languages import get_language_profiles

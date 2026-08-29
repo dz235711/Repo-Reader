@@ -1,10 +1,10 @@
-from pathlib import Path
-from enum import StrEnum
-from typing import Callable
+from collections.abc import Callable
 from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path
 
-from gitignore_parser import parse_gitignore
 from frozendict import frozendict
+from gitignore_parser import parse_gitignore
 
 
 class Vcs(StrEnum):

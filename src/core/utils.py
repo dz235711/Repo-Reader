@@ -1,5 +1,4 @@
-from typing import Generator, Callable
-from collections.abc import Iterable
+from collections.abc import Callable, Generator, Iterable
 
 type NestedIterable[T] = Iterable[NestedIterable[T] | T]
 

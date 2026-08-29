@@ -1,4 +1,5 @@
 import tree_sitter as ts
+from collections.abc import Callable
 
 from core.models import SourceSpan, Coordinate, Expression
 
@@ -77,6 +78,13 @@ def first_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
 
 def first_type_of(node: ts.Node, type: str) -> ts.Node:
     return first_types_of(node, {type})[type]
+
+
+def exec_if_named_child[T](
+    func: Callable[[ts.Node], T], node: ts.Node, name: str, default: Callable[[], T]
+) -> T:
+    child = node.child_by_field_name(name)
+    return func(child) if child is not None else default()
 
 
 def named_child_of(node: ts.Node, name: str) -> ts.Node:

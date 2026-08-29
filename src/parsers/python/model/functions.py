@@ -1,14 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.models import SourceSpan, Expression
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Parameter:
-    name: Expression
-    span: SourceSpan
-    annotation: Expression | None
-    default_value: Expression | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -37,18 +29,26 @@ type TypeParameter = PlainTypeParameter | BoundTypeParameter | ConstrainedTypePa
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TypeParameters:
-    regulars: tuple[TypeParameter, ...]
-    tuples: tuple[PlainTypeParameter, ...]
-    specs: tuple[PlainTypeParameter, ...]
+    regulars: tuple[TypeParameter, ...] = ()
+    tuples: tuple[PlainTypeParameter, ...] = ()
+    specs: tuple[PlainTypeParameter, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Parameter:
+    name: Expression
+    span: SourceSpan
+    annotation: Expression | None = None
+    default_value: Expression | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Parameters:
-    parameters: tuple[Parameter, ...]
-    positional_parameters: tuple[Parameter, ...]
-    keyword_parameters: tuple[Parameter, ...]
-    var_positional_parameter: Parameter | None
-    var_keyword_parameter: Parameter | None
+    regulars: tuple[Parameter, ...] = ()
+    positionals: tuple[Parameter, ...] = ()
+    keywords: tuple[Parameter, ...] = ()
+    var_positional: Parameter | None = None
+    var_keyword: Parameter | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -63,28 +63,28 @@ class KeywordArgument(PositionalArgument):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Arguments:
-    positional_argument: tuple[PositionalArgument, ...]
-    keyword_arguments: tuple[KeywordArgument, ...]
-    iterable_unpacking: tuple[PositionalArgument, ...]
-    keyword_unpacking: tuple[PositionalArgument, ...]
+    positional_argument: tuple[PositionalArgument, ...] = ()
+    keyword_arguments: tuple[KeywordArgument, ...] = ()
+    iterable_unpacking: tuple[PositionalArgument, ...] = ()
+    keyword_unpacking: tuple[PositionalArgument, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Decorator:
     name: Expression
-    arguments: Arguments
+    arguments: Arguments = field(default_factory=Arguments)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Function:
     name: Expression
-    qualified_name: str | None
     span: SourceSpan
-    is_async: bool
-    type_parameters: TypeParameters
-    parameters: Parameters
-    decorators: tuple[Decorator, ...]
     body_span: SourceSpan  # TODO: parse further once initial works
-    return_annotation: Expression
-    is_method: bool
+    qualified_name: str | None = None
+    is_async: bool = False
+    type_parameters: TypeParameters = field(default_factory=TypeParameters)
+    parameters: Parameters = field(default_factory=Parameters)
+    decorators: tuple[Decorator, ...] = ()
+    return_annotation: Expression | None = None
+    is_method: bool = False
     parent_qualified_name: str | None = None

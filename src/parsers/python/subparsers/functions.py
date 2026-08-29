@@ -3,13 +3,16 @@ import tree_sitter as ts
 from adaptors.treesitter import (
     span_from_node,
     named_child_of,
-    expression_from_node,
     type_of,
     types_of,
     only_child_of,
+    exec_if_named_child,
+    only_type_of,
+    expression_from_node,
 )
 from core.utils import map_t, flatten
 
+from .core import parse_name
 from ..ts_nodes.functions import (
     FunctionNodeType,
     FunctionDefinitionFields,
@@ -19,6 +22,11 @@ from ..ts_nodes.functions import (
     ConstrainedTypeParameterChildrenIndices,
     SplatTypeParameterChildrenIndices,
     SplatTypeParameterPrefixes,
+    PARAMETER_NODE_WRAPPER,
+    ParameterChildrenTypes,
+    TypedParameterChildrenIndices,
+    TypedParameterNameTypes,
+    TypedDefaultParameterFields,
 )
 from ..model.functions import (
     Function,
@@ -26,23 +34,31 @@ from ..model.functions import (
     PlainTypeParameter,
     ConstrainedTypeParameter,
     BoundTypeParameter,
+    Parameters,
+    Parameter,
 )
-from ..ts_nodes.core import CollectionTypes
+from ..ts_nodes.core import CollectionTypes, NameTypes
 
 
 def parse_function(node: ts.Node) -> Function:
     match FunctionNodeType(node.type):
         case FunctionNodeType.FUNCTION_DEFINITION:
-            name = expression_from_node(
-                named_child_of(node, FunctionDefinitionFields.NAME)
+            name = parse_name(named_child_of(node, FunctionDefinitionFields.NAME))
+            type_parameters = exec_if_named_child(
+                _parse_type_parameters,
+                node,
+                FunctionDefinitionFields.TYPE_PARAMETERS,
+                TypeParameters,
             )
-            type_parameters = _parse_type_parameters(
-                named_child_of(node, FunctionDefinitionFields.TYPE_PARAMETERS)
+            parameters = exec_if_named_child(
+                _parse_parameters,
+                node,
+                FunctionDefinitionFields.PARAMETERS,
+                Parameters,
             )
             matched = types_of(node, set(FunctionDefinitionNodeTypes))
             # return Function(
             #     name=name,
-            #     qualified_name=None,
             #     span=span_from_node(node),
             #     is_async=FunctionDefinitionNodeTypes.ASYNC in matched,
             #     type_parameters=type_parameters,
@@ -60,7 +76,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
             case TypeParameterChildrenTypes.IDENTIFIER:
                 regulars.append(
                     PlainTypeParameter(
-                        name=expression_from_node(type_param_node),
+                        name=parse_name(type_param_node),
                     )
                 )
             case TypeParameterChildrenTypes.CONSTRAINED_TYPE:
@@ -74,19 +90,19 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                         ConstrainedTypeParameterChildrenIndices.CONSTRAINTS
                     ]
                 )
-                name = expression_from_node(name_node)
+                name = parse_name(name_node)
                 if constraint_node.type == CollectionTypes.TUPLE:
                     constraints = type_of(
                         constraint_node, TypeParameterChildrenTypes.IDENTIFIER
                     )
                     param = ConstrainedTypeParameter(
                         name=name,
-                        constraints=map_t(expression_from_node, constraints),
+                        constraints=map_t(parse_name, constraints),
                     )
                 else:
                     param = BoundTypeParameter(
                         name=name,
-                        bind=expression_from_node(constraint_node),
+                        bind=parse_name(constraint_node),
                     )
                 regulars.append(param)
             case TypeParameterChildrenTypes.SPLAT_TYPE:
@@ -95,7 +111,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                 ]
                 name = type_param_node.children[SplatTypeParameterChildrenIndices.NAME]
                 type_param_node = PlainTypeParameter(
-                    name=expression_from_node(name),
+                    name=parse_name(name),
                 )
                 match SplatTypeParameterPrefixes(prefix.type):
                     case SplatTypeParameterPrefixes.TUPLE:
@@ -106,4 +122,111 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
         regulars=tuple(regulars),
         tuples=tuple(tuples),
         specs=tuple(specs),
+    )
+
+
+def _parse_parameters(node: ts.Node) -> Parameters:
+    regulars = []
+    positionals = []
+    keywords = []
+    var_positional = None
+    var_keyword = None
+
+    has_positionals = False
+    has_keywords = False
+
+    def _bin_parameter(
+        has_positional: bool,
+        has_keyword: bool,
+        parameter: Parameter,
+    ) -> None:
+        if has_keyword:
+            keywords.append(parameter)
+        elif has_positional:
+            regulars.append(parameter)
+        else:
+            positionals.append(parameter)
+
+    for child in node.children:
+        match child.type:
+            case ParameterChildrenTypes.TYPED_PARAMETER:
+                variant_node = child.children[TypedParameterChildrenIndices.VARIANT]
+                span = span_from_node(child)
+                type_node = child.children[TypedParameterChildrenIndices.TYPE]
+                annotation = parse_name(only_child_of(type_node))
+                match TypedParameterNameTypes(variant_node.type):
+                    case TypedParameterNameTypes.IDENTIFIER:
+                        _bin_parameter(
+                            has_positionals,
+                            has_keywords,
+                            Parameter(
+                                name=parse_name(variant_node),
+                                span=span,
+                                annotation=annotation,
+                            ),
+                        )
+                    case TypedParameterNameTypes.LIST_SPLAT:
+                        has_keywords = True
+                        name = parse_name(
+                            only_type_of(variant_node, NameTypes.IDENTIFIER)
+                        )
+                        var_positional = Parameter(
+                            name=name,
+                            span=span,
+                            annotation=annotation,
+                        )
+                    case TypedParameterNameTypes.DICT_SPLAT:
+                        name = parse_name(
+                            only_type_of(variant_node, NameTypes.IDENTIFIER)
+                        )
+                        var_keyword = Parameter(
+                            name=name,
+                            span=span,
+                            annotation=annotation,
+                        )
+            case ParameterChildrenTypes.POSITIONAL_SEPARATOR:
+                has_positionals = True
+            case ParameterChildrenTypes.TYPED_DEFAULT_PARAMETER:
+                _bin_parameter(
+                    has_positionals,
+                    has_keywords,
+                    Parameter(
+                        name=parse_name(
+                            named_child_of(child, TypedDefaultParameterFields.NAME)
+                        ),
+                        span=span_from_node(child),
+                        annotation=parse_name(
+                            only_child_of(
+                                named_child_of(child, TypedDefaultParameterFields.TYPE)
+                            )
+                        ),
+                        default_value=expression_from_node(
+                            named_child_of(child, TypedDefaultParameterFields.VALUE)
+                        ),
+                    ),
+                )
+            case ParameterChildrenTypes.IDENTIFIER:
+                _bin_parameter(
+                    has_positionals,
+                    has_keywords,
+                    Parameter(
+                        name=parse_name(child),
+                        span=span_from_node(child),
+                    ),
+                )
+            case ParameterChildrenTypes.KEYWORD_SEPARATOR:
+                has_keywords = True
+            case _:
+                pass
+
+    if not has_positionals:
+        regulars = positionals
+        positionals = []
+
+    return Parameters(
+        regulars=tuple(regulars),
+        positionals=tuple(positionals),
+        keywords=tuple(keywords),
+        var_positional=var_positional,
+        var_keyword=var_keyword,
     )

@@ -1,8 +1,9 @@
 from enum import StrEnum, IntEnum
 
-from .core import Fields
+from .core import Fields, NameTypes
 
 TYPE_PARAMETER_NODE_WRAPPER = "type"
+PARAMETER_NODE_WRAPPER = "parameter"
 
 
 class FunctionNodeType(StrEnum):
@@ -12,6 +13,7 @@ class FunctionNodeType(StrEnum):
 class FunctionDefinitionFields(StrEnum):
     NAME = Fields.NAME
     TYPE_PARAMETERS = "type_parameters"
+    PARAMETERS = "parameters"
 
 
 class FunctionDefinitionNodeTypes(StrEnum):
@@ -19,7 +21,7 @@ class FunctionDefinitionNodeTypes(StrEnum):
 
 
 class TypeParameterChildrenTypes(StrEnum):
-    IDENTIFIER = "identifier"
+    IDENTIFIER = NameTypes.IDENTIFIER
     CONSTRAINED_TYPE = "constrained_type"
     SPLAT_TYPE = "splat_type"
 
@@ -37,3 +39,28 @@ class SplatTypeParameterPrefixes(StrEnum):
 class SplatTypeParameterChildrenIndices(IntEnum):
     PREFIX = 0
     NAME = 1
+
+
+class ParameterChildrenTypes(StrEnum):
+    TYPED_PARAMETER = "typed_parameter"
+    POSITIONAL_SEPARATOR = "positional_separator"
+    TYPED_DEFAULT_PARAMETER = "typed_default_parameter"
+    IDENTIFIER = NameTypes.IDENTIFIER
+    KEYWORD_SEPARATOR = "keyword_separator"
+
+
+class TypedParameterChildrenIndices(IntEnum):
+    VARIANT = 0
+    TYPE = 2
+
+
+class TypedParameterNameTypes(StrEnum):
+    IDENTIFIER = NameTypes.IDENTIFIER
+    LIST_SPLAT = "list_splat_pattern"
+    DICT_SPLAT = "dictionary_splat_pattern"
+
+
+class TypedDefaultParameterFields(StrEnum):
+    NAME = "name"
+    TYPE = "type"
+    VALUE = "value"

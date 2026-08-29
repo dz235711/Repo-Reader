@@ -14,7 +14,7 @@ type FSItem = Directory | File
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Directory:
     rel_path: Path
-    children: tuple[FSItem, ...]
+    children: tuple[FSItem, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

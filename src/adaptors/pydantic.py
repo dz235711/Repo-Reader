@@ -1,4 +1,5 @@
-from typing import TypeVar, Annotated, Any, get_args, Mapping
+from collections.abc import Mapping
+from typing import Annotated, TypeVar, get_args
 
 from pydantic_core import CoreSchema
 from pydantic_core.core_schema import (
@@ -15,7 +16,7 @@ class _PydanticFrozenDictAnnotation:
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
+        cls, source_type: object, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
         key_type, value_type = get_args(source_type)
 

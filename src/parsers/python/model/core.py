@@ -8,7 +8,7 @@ from .imports import Import
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PythonParsedFile(ParsedFile):
-    imports: tuple[Import, ...]
+    imports: tuple[Import, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import tree_sitter as ts
 
 from core.models import Expression
@@ -11,9 +9,9 @@ from adaptors.treesitter import (
     only_type_of,
     only_types_of,
     types_of,
-    expression_from_node,
 )
 
+from .core import parse_name
 from ..model.imports import (
     ImportStatement,
     ImportName,
@@ -46,25 +44,18 @@ def parse_import(node: ts.Node) -> Import:
             return _parse_import_statement(node)
 
 
-def _parse_name(node: ts.Node) -> Expression:
-    match NameTypes(node.type):
-        case NameTypes.DOTTED_NAME | NameTypes.NAME:
-            return expression_from_node(node)
-
-
 def _parse_import_name(node: ts.Node) -> ImportName:
     match ImportNameTypes(node.type):
         case ImportNameTypes.ALIASED_IMPORT:
-            import_name = _parse_import_name(child_of(node, AliasedImportFields.NAME))
             alias = child_of(node, AliasedImportFields.ALIAS)
-            return replace(
-                import_name,
+            return ImportName(
+                name=parse_name(child_of(node, AliasedImportFields.NAME)),
                 span=span_from_node(node),
-                alias=expression_from_node(alias),
+                alias=parse_name(alias),
             )
         case ImportNameTypes.DOTTED_NAME:
             return ImportName(
-                name=_parse_name(node),
+                name=parse_name(node),
                 span=span_from_node(node),
             )
 
@@ -75,16 +66,14 @@ def _parse_import_statement(node: ts.Node) -> ImportStatement:
         _parse_import_name,
         node.children_by_field_name(ImportStatementFields.NAME),
     )
-    return ImportStatement(names=names, span=span, scope_qualified_name=None)
+    return ImportStatement(names=names, span=span)
 
 
 def _parse_future_import_statement(node: ts.Node) -> FutureImportStatement:
     span = span_from_node(node)
-    names = tuple(
-        map(
-            _parse_import_name,
-            flatten(types_of(node, set(ImportNameTypes)).values(), (ts.Node,)),
-        )
+    names = map_t(
+        _parse_import_name,
+        flatten(types_of(node, set(ImportNameTypes)).values(), (ts.Node,)),
     )
     return FutureImportStatement(names=names, span=span)
 
@@ -92,7 +81,7 @@ def _parse_future_import_statement(node: ts.Node) -> FutureImportStatement:
 def _parse_module_name(node: ts.Node) -> Expression | RelativeImport:
     match ModuleNameTypes(node.type):
         case ModuleNameTypes.DOTTED_NAME:
-            return _parse_name(node)
+            return parse_name(node)
         case ModuleNameTypes.RELATIVE_IMPORT:
             matched = only_types_of(node, set(RelativeImportChildTypes))
             prefix = matched[RelativeImportChildTypes.IMPORT_PREFIX]
@@ -100,7 +89,7 @@ def _parse_module_name(node: ts.Node) -> Expression | RelativeImport:
             name = matched.get(RelativeImportChildTypes.DOTTED_NAME)
             return RelativeImport(
                 relative_level=level,
-                module_name=_parse_name(name).name if name is not None else None,
+                module_name=parse_name(name).name if name is not None else None,
                 span=span_from_node(node),
             )
 
@@ -119,5 +108,4 @@ def _parse_import_from_statement(node: ts.Node) -> ImportFromStatement:
         members=members,
         span=span,
         module=module_node,
-        scope_qualified_name=None,
     )
