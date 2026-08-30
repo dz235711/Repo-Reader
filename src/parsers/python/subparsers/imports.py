@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import tree_sitter as ts
 
 from core.models import Expression
@@ -48,8 +50,8 @@ def _parse_import_name(node: ts.Node) -> ImportName:
     match ImportNameTypes(node.type):
         case ImportNameTypes.ALIASED_IMPORT:
             alias = child_of(node, AliasedImportFields.ALIAS)
-            return ImportName(
-                name=parse_name(child_of(node, AliasedImportFields.NAME)),
+            return replace(
+                _parse_import_name(child_of(node, AliasedImportFields.NAME)),
                 span=span_from_node(node),
                 alias=parse_name(alias),
             )

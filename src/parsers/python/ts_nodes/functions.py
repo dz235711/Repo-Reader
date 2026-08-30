@@ -8,12 +8,14 @@ PARAMETER_NODE_WRAPPER = "parameter"
 
 class FunctionNodeType(StrEnum):
     FUNCTION_DEFINITION = "function_definition"
+    DECORATED_DEFINITION = "decorated_definition"
 
 
 class FunctionDefinitionFields(StrEnum):
     NAME = Fields.NAME
     TYPE_PARAMETERS = "type_parameters"
     PARAMETERS = "parameters"
+    RETURN_TYPE = "return_type"
 
 
 class FunctionDefinitionNodeTypes(StrEnum):
@@ -64,3 +66,8 @@ class TypedDefaultParameterFields(StrEnum):
     NAME = "name"
     TYPE = "type"
     VALUE = "value"
+
+
+class DecoratedDefinitionTypes(StrEnum):
+    DECORATOR = "decorator"
+    DEFINITION = FunctionNodeType.FUNCTION_DEFINITION

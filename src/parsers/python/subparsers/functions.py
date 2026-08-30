@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import tree_sitter as ts
 
 from adaptors.treesitter import (
@@ -27,6 +29,7 @@ from ..ts_nodes.functions import (
     TypedParameterChildrenIndices,
     TypedParameterNameTypes,
     TypedDefaultParameterFields,
+    DecoratedDefinitionTypes,
 )
 from ..model.functions import (
     Function,
@@ -36,6 +39,7 @@ from ..model.functions import (
     BoundTypeParameter,
     Parameters,
     Parameter,
+    Decorator,
 )
 from ..ts_nodes.core import CollectionTypes, NameTypes
 
@@ -56,13 +60,39 @@ def parse_function(node: ts.Node) -> Function:
                 FunctionDefinitionFields.PARAMETERS,
                 Parameters,
             )
-            matched = types_of(node, set(FunctionDefinitionNodeTypes))
-            # return Function(
-            #     name=name,
-            #     span=span_from_node(node),
-            #     is_async=FunctionDefinitionNodeTypes.ASYNC in matched,
-            #     type_parameters=type_parameters,
-            # )
+            is_async = len(type_of(node, FunctionDefinitionNodeTypes.ASYNC)) > 0
+            return_type = exec_if_named_child(
+                lambda n: expression_from_node(only_child_of(n)),
+                node,
+                FunctionDefinitionFields.RETURN_TYPE,
+                lambda: None,
+            )
+            return Function(
+                name=name,
+                span=span_from_node(node),
+                body_span=span_from_node(node),
+                is_async=is_async,
+                type_parameters=type_parameters,
+                parameters=parameters,
+                return_annotation=return_type,
+            )
+        case FunctionNodeType.DECORATED_DEFINITION:
+            decorators = map_t(
+                lambda node: Decorator(
+                    body=expression_from_node(node),
+                ),
+                type_of(
+                    node,
+                    DecoratedDefinitionTypes.DECORATOR,
+                ),
+            )
+            function = parse_function(
+                only_type_of(
+                    node,
+                    DecoratedDefinitionTypes.DEFINITION,
+                )
+            )
+            return replace(function, decorators=decorators, span=span_from_node(node))
 
 
 def _parse_type_parameters(node: ts.Node) -> TypeParameters:

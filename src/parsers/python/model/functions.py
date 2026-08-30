@@ -71,8 +71,9 @@ class Arguments:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Decorator:
-    name: Expression
-    arguments: Arguments = field(default_factory=Arguments)
+    # TODO: its any arbitrary expression that evaluates to the decorator signature
+    # parse after body_span for Function is expanded on
+    body: Expression
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -80,11 +81,10 @@ class Function:
     name: Expression
     span: SourceSpan
     body_span: SourceSpan  # TODO: parse further once initial works
-    qualified_name: str | None = None
     is_async: bool = False
     type_parameters: TypeParameters = field(default_factory=TypeParameters)
     parameters: Parameters = field(default_factory=Parameters)
-    decorators: tuple[Decorator, ...] = ()
     return_annotation: Expression | None = None
+    decorators: tuple[Decorator, ...] = ()
     is_method: bool = False
-    parent_qualified_name: str | None = None
+    parent: Function | None = None  # TODO: also class once that is added
