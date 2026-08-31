@@ -2,40 +2,12 @@ from dataclasses import dataclass, field
 
 from core.models import SourceSpan, Expression
 
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _TypeParameter:
-    name: Expression
-    default: Expression | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PlainTypeParameter(_TypeParameter):
-    pass
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class BoundTypeParameter(_TypeParameter):
-    bind: Expression
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ConstrainedTypeParameter(_TypeParameter):
-    constraints: tuple[Expression, ...]
-
-
-type TypeParameter = PlainTypeParameter | BoundTypeParameter | ConstrainedTypeParameter
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TypeParameters:
-    regulars: tuple[TypeParameter, ...] = ()
-    tuples: tuple[PlainTypeParameter, ...] = ()
-    specs: tuple[PlainTypeParameter, ...] = ()
+from .core import TypeParameters, Decorator, Scope
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Parameter:
+    index: int
     name: Expression
     span: SourceSpan
     annotation: Expression | None = None
@@ -52,32 +24,7 @@ class Parameters:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class PositionalArgument:
-    value: Expression
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class KeywordArgument(PositionalArgument):
-    name: Expression
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Arguments:
-    positional_argument: tuple[PositionalArgument, ...] = ()
-    keyword_arguments: tuple[KeywordArgument, ...] = ()
-    iterable_unpacking: tuple[PositionalArgument, ...] = ()
-    keyword_unpacking: tuple[PositionalArgument, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Decorator:
-    # TODO: its any arbitrary expression that evaluates to the decorator signature
-    # parse after body_span for Function is expanded on
-    body: Expression
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Function:
+class Function(Scope):
     name: Expression
     span: SourceSpan
     body_span: SourceSpan  # TODO: parse further once initial works
@@ -86,5 +33,4 @@ class Function:
     parameters: Parameters = field(default_factory=Parameters)
     return_annotation: Expression | None = None
     decorators: tuple[Decorator, ...] = ()
-    is_method: bool = False
-    parent: Function | None = None  # TODO: also class once that is added
+    parent: Scope | None = None

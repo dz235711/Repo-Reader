@@ -31,15 +31,17 @@ from ..ts_nodes.functions import (
     TypedDefaultParameterFields,
     DecoratedDefinitionTypes,
 )
-from ..model.functions import (
-    Function,
+from ..model.core import (
     TypeParameters,
     PlainTypeParameter,
     ConstrainedTypeParameter,
     BoundTypeParameter,
+    Decorator,
+)
+from ..model.functions import (
+    Function,
     Parameters,
     Parameter,
-    Decorator,
 )
 from ..ts_nodes.core import CollectionTypes, NameTypes
 
@@ -177,6 +179,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
         else:
             positionals.append(parameter)
 
+    index = 0
     for child in node.children:
         match child.type:
             case ParameterChildrenTypes.TYPED_PARAMETER:
@@ -190,6 +193,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                             has_positionals,
                             has_keywords,
                             Parameter(
+                                index=index,
                                 name=parse_name(variant_node),
                                 span=span,
                                 annotation=annotation,
@@ -201,6 +205,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                             only_type_of(variant_node, NameTypes.IDENTIFIER)
                         )
                         var_positional = Parameter(
+                            index=index,
                             name=name,
                             span=span,
                             annotation=annotation,
@@ -210,10 +215,12 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                             only_type_of(variant_node, NameTypes.IDENTIFIER)
                         )
                         var_keyword = Parameter(
+                            index=index,
                             name=name,
                             span=span,
                             annotation=annotation,
                         )
+                index += 1
             case ParameterChildrenTypes.POSITIONAL_SEPARATOR:
                 has_positionals = True
             case ParameterChildrenTypes.TYPED_DEFAULT_PARAMETER:
@@ -221,6 +228,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                     has_positionals,
                     has_keywords,
                     Parameter(
+                        index=index,
                         name=parse_name(
                             named_child_of(child, TypedDefaultParameterFields.NAME)
                         ),
@@ -235,15 +243,18 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                         ),
                     ),
                 )
+                index += 1
             case ParameterChildrenTypes.IDENTIFIER:
                 _bin_parameter(
                     has_positionals,
                     has_keywords,
                     Parameter(
+                        index=index,
                         name=parse_name(child),
                         span=span_from_node(child),
                     ),
                 )
+                index += 1
             case ParameterChildrenTypes.KEYWORD_SEPARATOR:
                 has_keywords = True
             case _:
