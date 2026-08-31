@@ -49,6 +49,8 @@ class ParameterChildrenTypes(StrEnum):
     TYPED_DEFAULT_PARAMETER = "typed_default_parameter"
     IDENTIFIER = NameTypes.IDENTIFIER
     KEYWORD_SEPARATOR = "keyword_separator"
+    LIST_SPLAT = "list_splat_pattern"
+    DICT_SPLAT = "dictionary_splat_pattern"
 
 
 class TypedParameterChildrenIndices(IntEnum):

@@ -181,45 +181,59 @@ def _parse_parameters(node: ts.Node) -> Parameters:
 
     index = 0
     for child in node.children:
+        span = span_from_node(child)
         match child.type:
             case ParameterChildrenTypes.TYPED_PARAMETER:
-                variant_node = child.children[TypedParameterChildrenIndices.VARIANT]
-                span = span_from_node(child)
                 type_node = child.children[TypedParameterChildrenIndices.TYPE]
                 annotation = parse_name(only_child_of(type_node))
-                match TypedParameterNameTypes(variant_node.type):
-                    case TypedParameterNameTypes.IDENTIFIER:
-                        _bin_parameter(
-                            has_positionals,
-                            has_keywords,
-                            Parameter(
-                                index=index,
-                                name=parse_name(variant_node),
-                                span=span,
-                                annotation=annotation,
-                            ),
-                        )
-                    case TypedParameterNameTypes.LIST_SPLAT:
-                        has_keywords = True
-                        name = parse_name(
-                            only_type_of(variant_node, NameTypes.IDENTIFIER)
-                        )
-                        var_positional = Parameter(
-                            index=index,
-                            name=name,
-                            span=span,
-                            annotation=annotation,
-                        )
-                    case TypedParameterNameTypes.DICT_SPLAT:
-                        name = parse_name(
-                            only_type_of(variant_node, NameTypes.IDENTIFIER)
-                        )
-                        var_keyword = Parameter(
-                            index=index,
-                            name=name,
-                            span=span,
-                            annotation=annotation,
-                        )
+                parameters = _parse_parameters(child)
+
+                def _annotate(parameter: Parameter) -> Parameter:
+                    return replace(parameter, annotation=annotation)
+
+                if parameters.var_positional is not None:
+                    var_positional = _annotate(parameters.var_positional)
+                if parameters.var_keyword is not None:
+                    var_keyword = _annotate(parameters.var_keyword)
+                else:
+                    nonsplats = (
+                        parameters.regulars
+                        + parameters.positionals
+                        + parameters.keywords
+                    )
+                    assert len(nonsplats) == 1
+                    _bin_parameter(
+                        has_positionals,
+                        has_keywords,
+                        _annotate(nonsplats[0]),
+                    )
+                index += 1
+            case ParameterChildrenTypes.LIST_SPLAT:
+                has_keywords = True
+                name = parse_name(
+                    only_type_of(
+                        only_type_of(node, ParameterChildrenTypes.LIST_SPLAT),
+                        NameTypes.IDENTIFIER,
+                    )
+                )
+                var_positional = Parameter(
+                    index=index,
+                    name=name,
+                    span=span,
+                )
+                index += 1
+            case ParameterChildrenTypes.DICT_SPLAT:
+                name = parse_name(
+                    only_type_of(
+                        only_type_of(node, ParameterChildrenTypes.DICT_SPLAT),
+                        NameTypes.IDENTIFIER,
+                    )
+                )
+                var_keyword = Parameter(
+                    index=index,
+                    name=name,
+                    span=span,
+                )
                 index += 1
             case ParameterChildrenTypes.POSITIONAL_SEPARATOR:
                 has_positionals = True
@@ -232,7 +246,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                         name=parse_name(
                             named_child_of(child, TypedDefaultParameterFields.NAME)
                         ),
-                        span=span_from_node(child),
+                        span=span,
                         annotation=parse_name(
                             only_child_of(
                                 named_child_of(child, TypedDefaultParameterFields.TYPE)
@@ -251,7 +265,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                     Parameter(
                         index=index,
                         name=parse_name(child),
-                        span=span_from_node(child),
+                        span=span,
                     ),
                 )
                 index += 1
