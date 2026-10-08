@@ -57,6 +57,7 @@ class ParameterChildrenTypes(StrEnum):
     TYPED_PARAMETER = "typed_parameter"
     POSITIONAL_SEPARATOR = "positional_separator"
     TYPED_DEFAULT_PARAMETER = "typed_default_parameter"
+    DEFAULT_PARAMETER = "default_parameter"
     IDENTIFIER = NameTypes.IDENTIFIER
     KEYWORD_SEPARATOR = "keyword_separator"
     LIST_SPLAT = "list_splat_pattern"

@@ -190,10 +190,13 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                 parameters = _parse_parameters(child)
 
                 def _annotate(parameter: Parameter) -> Parameter:
-                    return replace(parameter, annotation=annotation)
+                    return replace(
+                        parameter, annotation=annotation, index=index, span=span
+                    )
 
                 if parameters.var_positional is not None:
                     var_positional = _annotate(parameters.var_positional)
+                    has_keywords = True
                 elif parameters.var_keyword is not None:
                     var_keyword = _annotate(parameters.var_keyword)
                 else:
@@ -238,7 +241,17 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                 index += 1
             case ParameterChildrenTypes.POSITIONAL_SEPARATOR:
                 has_positionals = True
-            case ParameterChildrenTypes.TYPED_DEFAULT_PARAMETER:
+            case (
+                ParameterChildrenTypes.TYPED_DEFAULT_PARAMETER
+                | ParameterChildrenTypes.DEFAULT_PARAMETER
+            ):
+                annotation = None
+                if child.type == ParameterChildrenTypes.TYPED_DEFAULT_PARAMETER:
+                    annotation = expression_from_node(
+                        only_child_of(
+                            named_child_of(child, TypedDefaultParameterFields.TYPE)
+                        )
+                    )
                 _bin_parameter(
                     has_positionals,
                     has_keywords,
@@ -248,11 +261,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                             named_child_of(child, TypedDefaultParameterFields.NAME)
                         ),
                         span=span,
-                        annotation=expression_from_node(
-                            only_child_of(
-                                named_child_of(child, TypedDefaultParameterFields.TYPE)
-                            )
-                        ),
+                        annotation=annotation,
                         default_value=expression_from_node(
                             named_child_of(child, TypedDefaultParameterFields.VALUE)
                         ),
