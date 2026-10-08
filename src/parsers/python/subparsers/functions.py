@@ -5,16 +5,15 @@ import tree_sitter as ts
 from adaptors.treesitter import (
     span_from_node,
     named_child_of,
-    type_of,
     types_of,
     only_child_of,
     exec_if_named_child,
     only_type_of,
+    has_type_of,
     expression_from_node,
 )
 from core.utils import map_t, flatten
 
-from .core import parse_name
 from ..ts_nodes.functions import (
     FunctionNodeType,
     FunctionDefinitionFields,
@@ -22,12 +21,11 @@ from ..ts_nodes.functions import (
     TypeParameterChildrenTypes,
     TYPE_PARAMETER_NODE_WRAPPER,
     ConstrainedTypeParameterChildrenIndices,
+    ConstrainedTypeParameterConstraintsChildrenTypes,
     SplatTypeParameterChildrenIndices,
     SplatTypeParameterPrefixes,
-    PARAMETER_NODE_WRAPPER,
     ParameterChildrenTypes,
     TypedParameterChildrenIndices,
-    TypedParameterNameTypes,
     TypedDefaultParameterFields,
     DecoratedDefinitionTypes,
 )
@@ -49,7 +47,9 @@ from ..ts_nodes.core import CollectionTypes, NameTypes
 def parse_function(node: ts.Node) -> Function:
     match FunctionNodeType(node.type):
         case FunctionNodeType.FUNCTION_DEFINITION:
-            name = parse_name(named_child_of(node, FunctionDefinitionFields.NAME))
+            name = expression_from_node(
+                named_child_of(node, FunctionDefinitionFields.NAME)
+            )
             type_parameters = exec_if_named_child(
                 _parse_type_parameters,
                 node,
@@ -62,7 +62,7 @@ def parse_function(node: ts.Node) -> Function:
                 FunctionDefinitionFields.PARAMETERS,
                 Parameters,
             )
-            is_async = len(type_of(node, FunctionDefinitionNodeTypes.ASYNC)) > 0
+            is_async = has_type_of(node, {FunctionDefinitionNodeTypes.ASYNC})
             return_type = exec_if_named_child(
                 lambda n: expression_from_node(only_child_of(n)),
                 node,
@@ -83,9 +83,9 @@ def parse_function(node: ts.Node) -> Function:
                 lambda node: Decorator(
                     body=expression_from_node(node),
                 ),
-                type_of(
+                types_of(
                     node,
-                    DecoratedDefinitionTypes.DECORATOR,
+                    {DecoratedDefinitionTypes.DECORATOR},
                 ),
             )
             function = parse_function(
@@ -101,14 +101,14 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
     regulars = []
     tuples = []
     specs = []
-    for child in type_of(node, TYPE_PARAMETER_NODE_WRAPPER):
+    for child in types_of(node, {TYPE_PARAMETER_NODE_WRAPPER}):
         type_param_node = only_child_of(child)
         # NOTE: current python treesitter grammar is 3.12 so defaults can't be parsed yet
         match TypeParameterChildrenTypes(type_param_node.type):
             case TypeParameterChildrenTypes.IDENTIFIER:
                 regulars.append(
                     PlainTypeParameter(
-                        name=parse_name(type_param_node),
+                        name=expression_from_node(type_param_node),
                     )
                 )
             case TypeParameterChildrenTypes.CONSTRAINED_TYPE:
@@ -122,19 +122,20 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                         ConstrainedTypeParameterChildrenIndices.CONSTRAINTS
                     ]
                 )
-                name = parse_name(name_node)
+                name = expression_from_node(name_node)
                 if constraint_node.type == CollectionTypes.TUPLE:
-                    constraints = type_of(
-                        constraint_node, TypeParameterChildrenTypes.IDENTIFIER
+                    constraints = types_of(
+                        constraint_node,
+                        set(ConstrainedTypeParameterConstraintsChildrenTypes),
                     )
                     param = ConstrainedTypeParameter(
                         name=name,
-                        constraints=map_t(parse_name, constraints),
+                        constraints=map_t(expression_from_node, constraints),
                     )
                 else:
                     param = BoundTypeParameter(
                         name=name,
-                        bind=parse_name(constraint_node),
+                        bind=expression_from_node(constraint_node),
                     )
                 regulars.append(param)
             case TypeParameterChildrenTypes.SPLAT_TYPE:
@@ -143,7 +144,7 @@ def _parse_type_parameters(node: ts.Node) -> TypeParameters:
                 ]
                 name = type_param_node.children[SplatTypeParameterChildrenIndices.NAME]
                 type_param_node = PlainTypeParameter(
-                    name=parse_name(name),
+                    name=expression_from_node(name),
                 )
                 match SplatTypeParameterPrefixes(prefix.type):
                     case SplatTypeParameterPrefixes.TUPLE:
@@ -185,7 +186,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
         match child.type:
             case ParameterChildrenTypes.TYPED_PARAMETER:
                 type_node = child.children[TypedParameterChildrenIndices.TYPE]
-                annotation = parse_name(only_child_of(type_node))
+                annotation = expression_from_node(only_child_of(type_node))
                 parameters = _parse_parameters(child)
 
                 def _annotate(parameter: Parameter) -> Parameter:
@@ -193,7 +194,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
 
                 if parameters.var_positional is not None:
                     var_positional = _annotate(parameters.var_positional)
-                if parameters.var_keyword is not None:
+                elif parameters.var_keyword is not None:
                     var_keyword = _annotate(parameters.var_keyword)
                 else:
                     nonsplats = (
@@ -210,7 +211,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                 index += 1
             case ParameterChildrenTypes.LIST_SPLAT:
                 has_keywords = True
-                name = parse_name(
+                name = expression_from_node(
                     only_type_of(
                         only_type_of(node, ParameterChildrenTypes.LIST_SPLAT),
                         NameTypes.IDENTIFIER,
@@ -223,7 +224,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                 )
                 index += 1
             case ParameterChildrenTypes.DICT_SPLAT:
-                name = parse_name(
+                name = expression_from_node(
                     only_type_of(
                         only_type_of(node, ParameterChildrenTypes.DICT_SPLAT),
                         NameTypes.IDENTIFIER,
@@ -243,11 +244,11 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                     has_keywords,
                     Parameter(
                         index=index,
-                        name=parse_name(
+                        name=expression_from_node(
                             named_child_of(child, TypedDefaultParameterFields.NAME)
                         ),
                         span=span,
-                        annotation=parse_name(
+                        annotation=expression_from_node(
                             only_child_of(
                                 named_child_of(child, TypedDefaultParameterFields.TYPE)
                             )
@@ -264,7 +265,7 @@ def _parse_parameters(node: ts.Node) -> Parameters:
                     has_keywords,
                     Parameter(
                         index=index,
-                        name=parse_name(child),
+                        name=expression_from_node(child),
                         span=span,
                     ),
                 )

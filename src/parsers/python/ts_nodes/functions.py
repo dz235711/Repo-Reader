@@ -3,7 +3,6 @@ from enum import StrEnum, IntEnum
 from .core import Fields, NameTypes
 
 TYPE_PARAMETER_NODE_WRAPPER = "type"
-PARAMETER_NODE_WRAPPER = "parameter"
 
 
 class FunctionNodeType(StrEnum):
@@ -31,6 +30,17 @@ class TypeParameterChildrenTypes(StrEnum):
 class ConstrainedTypeParameterChildrenIndices(IntEnum):
     NAME = 0
     CONSTRAINTS = 2
+
+
+class ConstrainedTypeParameterConstraintsChildrenTypes(StrEnum):
+    IDENTIFIER = NameTypes.IDENTIFIER
+    SUBSCRIPT = "subscript"
+    ATTRIBUTE = "attribute"
+    STRING = "string"
+    BINARY_OPERATOR = "binary_operator"
+    NONE = "none"
+    CONCATENATED_STRING = "concatenated_string"
+    PARENTHESIZED_EXPRESSION = "parenthesized_expression"
 
 
 class SplatTypeParameterPrefixes(StrEnum):

@@ -14,7 +14,7 @@ class ImportName:
 class ImportStatement:
     names: tuple[ImportName, ...]
     span: SourceSpan
-    scope_qualified_name: str | None = None
+    scope_qualified_name: Expression | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -32,7 +32,7 @@ class WildCardImport:
 class RelativeImport:
     relative_level: int
     span: SourceSpan
-    module_name: str | None = None
+    module_name: Expression | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -40,7 +40,7 @@ class ImportFromStatement:
     members: tuple[ImportName, ...] | WildCardImport
     span: SourceSpan
     module: Expression | RelativeImport
-    scope_qualified_name: str | None = None
+    scope_qualified_name: Expression | None = None
 
 
 type Import = ImportStatement | FutureImportStatement | ImportFromStatement

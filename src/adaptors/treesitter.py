@@ -1,5 +1,5 @@
 import tree_sitter as ts
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 
 from core.models import SourceSpan, Coordinate, Expression
 
@@ -40,44 +40,22 @@ def only_child_of(node: ts.Node) -> ts.Node:
     return node.children[0]
 
 
-def types_of(
-    node: ts.Node, types: set[str], per_type_cap: int = 0
-) -> dict[str, list[ts.Node]]:
-    matched = dict()
-    filled = 0
+def types_of(node: ts.Node, types: set[str]) -> Generator[ts.Node, None, None]:
     for child in node.children:
         if child.type in types:
-            matched_nodes = matched.setdefault(child.type, [])
-            if per_type_cap <= 0 or len(matched_nodes) < per_type_cap:
-                matched_nodes.append(child)
-                if per_type_cap > 0 and len(matched_nodes) == per_type_cap:
-                    filled += 1
-                    if filled == len(types):
-                        break
+            yield child
+
+
+def only_type_of(node: ts.Node, types: str) -> ts.Node:
+    matcheds = types_of(node, {types})
+    matched = next(matcheds, None)
+    assert matched is not None and next(matcheds, None) is None
     return matched
 
 
-def type_of(node: ts.Node, type: str) -> list[ts.Node]:
-    return types_of(node, {type}).get(type, [])
-
-
-def only_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
-    matched = types_of(node, types)
-    assert all(len(nodes) == 1 for nodes in matched.values())
-    return {type: nodes[0] for type, nodes in matched.items()}
-
-
-def only_type_of(node: ts.Node, type: str) -> ts.Node:
-    return only_types_of(node, {type})[type]
-
-
-def first_types_of(node: ts.Node, types: set[str]) -> dict[str, ts.Node]:
-    matched = types_of(node, types, per_type_cap=1)
-    return {type: nodes[0] for type, nodes in matched.items()}
-
-
-def first_type_of(node: ts.Node, type: str) -> ts.Node:
-    return first_types_of(node, {type})[type]
+def has_type_of(node: ts.Node, types: set[str]) -> bool:
+    matcheds = types_of(node, types)
+    return next(matcheds, None) is not None
 
 
 def exec_if_named_child[T](
