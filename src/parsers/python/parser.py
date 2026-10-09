@@ -7,7 +7,7 @@ import tree_sitter as ts
 from configs.languages import Language
 
 from .ts_nodes.imports import ImportNodeTypes
-from .ts_nodes.functions import FunctionNodeType
+from .ts_nodes.functions import FunctionNodeTypes
 from .subparsers.imports import parse_import
 from .subparsers.functions import parse_function
 from .model.functions import Function
@@ -41,7 +41,7 @@ class Parser:
             node = fringe.pop()
             if node.type in ImportNodeTypes:
                 imports.append(parse_import(node))
-            elif node.type in FunctionNodeType:
+            elif node.type in FunctionNodeTypes:
                 functions.append(parse_function(node))
             else:
                 fringe.extend(node.children)

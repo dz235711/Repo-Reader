@@ -15,7 +15,7 @@ from adaptors.treesitter import (
 from core.utils import map_t, flatten
 
 from ..ts_nodes.functions import (
-    FunctionNodeType,
+    FunctionNodeTypes,
     FunctionDefinitionFields,
     FunctionDefinitionNodeTypes,
     TypeParameterChildrenTypes,
@@ -45,8 +45,8 @@ from ..ts_nodes.core import CollectionTypes, NameTypes
 
 
 def parse_function(node: ts.Node) -> Function:
-    match FunctionNodeType(node.type):
-        case FunctionNodeType.FUNCTION_DEFINITION:
+    match FunctionNodeTypes(node.type):
+        case FunctionNodeTypes.FUNCTION_DEFINITION:
             name = expression_from_node(
                 named_child_of(node, FunctionDefinitionFields.NAME)
             )
@@ -72,13 +72,15 @@ def parse_function(node: ts.Node) -> Function:
             return Function(
                 name=name,
                 span=span_from_node(node),
-                body_span=span_from_node(node),
+                body=expression_from_node(
+                    named_child_of(node, FunctionDefinitionFields.BODY)
+                ),
                 is_async=is_async,
                 type_parameters=type_parameters,
                 parameters=parameters,
                 return_annotation=return_type,
             )
-        case FunctionNodeType.DECORATED_DEFINITION:
+        case FunctionNodeTypes.DECORATED_DEFINITION:
             decorators = map_t(
                 lambda node: Decorator(
                     body=expression_from_node(node),

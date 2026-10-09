@@ -27,7 +27,7 @@ class Parameters:
 class Function(Scope):
     name: Expression
     span: SourceSpan
-    body_span: SourceSpan  # TODO: parse further once initial works
+    body: Expression  # TODO: parse further once initial works
     is_async: bool = False
     type_parameters: TypeParameters = field(default_factory=TypeParameters)
     parameters: Parameters = field(default_factory=Parameters)

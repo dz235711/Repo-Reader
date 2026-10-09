@@ -5,7 +5,7 @@ from .core import Fields, NameTypes
 TYPE_PARAMETER_NODE_WRAPPER = "type"
 
 
-class FunctionNodeType(StrEnum):
+class FunctionNodeTypes(StrEnum):
     FUNCTION_DEFINITION = "function_definition"
     DECORATED_DEFINITION = "decorated_definition"
 
@@ -15,6 +15,7 @@ class FunctionDefinitionFields(StrEnum):
     TYPE_PARAMETERS = "type_parameters"
     PARAMETERS = "parameters"
     RETURN_TYPE = "return_type"
+    BODY = "body"
 
 
 class FunctionDefinitionNodeTypes(StrEnum):
@@ -83,4 +84,4 @@ class TypedDefaultParameterFields(StrEnum):
 
 class DecoratedDefinitionTypes(StrEnum):
     DECORATOR = "decorator"
-    DEFINITION = FunctionNodeType.FUNCTION_DEFINITION
+    DEFINITION = FunctionNodeTypes.FUNCTION_DEFINITION
