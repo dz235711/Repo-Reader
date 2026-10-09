@@ -77,7 +77,7 @@ def _parse_future_import_statement(node: ts.Node) -> FutureImportStatement:
     return FutureImportStatement(names=names, span=span)
 
 
-def _parse_module_name(node: ts.Node) -> Expression | RelativeImport:
+def _parse_model_name(node: ts.Node) -> Expression | RelativeImport:
     match ModuleNameTypes(node.type):
         case ModuleNameTypes.DOTTED_NAME:
             return expression_from_node(node)
@@ -94,7 +94,7 @@ def _parse_module_name(node: ts.Node) -> Expression | RelativeImport:
 
 def _parse_import_from_statement(node: ts.Node) -> ImportFromStatement:
     span = span_from_node(node)
-    module_node = _parse_module_name(child_of(node, ImportFromFields.MODULE_NAME))
+    module_node = _parse_model_name(child_of(node, ImportFromFields.MODULE_NAME))
     members = map_t(
         _parse_import_name,
         node.children_by_field_name(ImportFromFields.NAME),

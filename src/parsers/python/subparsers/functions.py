@@ -80,23 +80,6 @@ def parse_function(node: ts.Node) -> Function:
                 parameters=parameters,
                 return_annotation=return_type,
             )
-        case FunctionNodeTypes.DECORATED_DEFINITION:
-            decorators = map_t(
-                lambda node: Decorator(
-                    body=expression_from_node(node),
-                ),
-                types_of(
-                    node,
-                    {DecoratedDefinitionTypes.DECORATOR},
-                ),
-            )
-            function = parse_function(
-                only_type_of(
-                    node,
-                    DecoratedDefinitionTypes.DEFINITION,
-                )
-            )
-            return replace(function, decorators=decorators, span=span_from_node(node))
 
 
 def _parse_type_parameters(node: ts.Node) -> TypeParameters:

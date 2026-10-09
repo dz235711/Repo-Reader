@@ -8,6 +8,12 @@ from configs.languages import Language
 class ParsedFile:
     rel_path: Path
     language: Language
+    body: Body
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Body:
+    span: SourceSpan
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -7,7 +7,6 @@ TYPE_PARAMETER_NODE_WRAPPER = "type"
 
 class FunctionNodeTypes(StrEnum):
     FUNCTION_DEFINITION = "function_definition"
-    DECORATED_DEFINITION = "decorated_definition"
 
 
 class FunctionDefinitionFields(StrEnum):
